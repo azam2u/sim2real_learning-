@@ -1,0 +1,31 @@
+import time
+import torch
+from slobot.slobot.so_arm_100 import SoArm100
+from slobot.slobot.feetech import Feetech  # Adjust import path as needed
+from slobot.slobot.configuration import Configuration
+
+mjcf_path = Configuration.MJCF_CONFIG
+arm_sim = SoArm100(mjcf_path=mjcf_path, elevated_base=True)
+feetech_real = Feetech(connect=True)  # Connect to real robot
+
+print("Manually move the robot arm. Simulation will update in real time.")
+
+try:
+    while True:
+        # Read real robot joint positions
+        real_qpos = feetech_real.get_qpos()
+        real_qpos_tensor = torch.tensor(real_qpos, dtype=torch.float32)
+
+        # Update sim robot joint positions directly
+        arm_sim.genesis.entity.set_qpos(real_qpos_tensor)
+
+        # Step simulation to update visualization and physics
+        arm_sim.genesis.step()
+
+        # Optional: Sleep to limit update rate (~20 Hz)
+        time.sleep(0.05)
+
+except KeyboardInterrupt:
+    print("Stopping simulation and disconnecting robot...")
+    feetech_real.disconnect()
+    arm_sim.stop()
