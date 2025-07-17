@@ -1,0 +1,41 @@
+from slobot.feetech import Feetech
+from slobot.configuration import Configuration
+from genesis import Genesis
+import torch
+import time
+
+# Map your QPOS preset names to POS_MAP keys (same names)
+presets = ['zero', 'rotated', 'rest']
+
+# Initialize Genesis simulator
+sim = Genesis(mjcf_path=Configuration.MJCF_CONFIG, show_viewer=True)
+
+# Initialize real robot controller
+feetech = Feetech()
+
+try:
+    for preset in presets:
+        print(f"Moving to preset: {preset}")
+
+        # 1. Move simulated robot
+        qpos = torch.tensor(Configuration.QPOS_MAP[preset])
+        sim.follow_path(qpos)
+
+        # 2. Move real robot
+        pwm = Configuration.POS_MAP[preset]
+        feetech.move(pwm)
+
+        # 3. Wait while simulation holds pose (simulate PD settling)
+        for _ in range(sim.HOLD_STEPS):
+            sim.step()
+
+    # Disable torque after movement
+    feetech.set_torque(False)
+
+except KeyboardInterrupt:
+    print("Interrupted, stopping...")
+    feetech.set_torque(False)
+    sim.stop()
+
+finally:
+    sim.stop()
