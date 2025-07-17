@@ -1,7 +1,7 @@
 import time
 import torch
 from slobot.slobot.so_arm_100 import SoArm100
-from slobot.slobot.feetech import Feetech  # Adjust import path as needed
+from slobot.slobot.feetech import Feetech  
 from slobot.slobot.configuration import Configuration
 
 mjcf_path = Configuration.MJCF_CONFIG
